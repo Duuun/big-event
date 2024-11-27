@@ -1,17 +1,38 @@
 <script setup>
-import { reactive, ref } from 'vue'
-import { defineProps, defineEmits } from 'vue'
+import { reactive, ref, watch, inject } from 'vue'
 import { User, Lock } from '@element-plus/icons-vue'
 
-// 定义触发事件的 emit
-const emit = defineEmits(['toggleRegister'])
+import { userRegisterService } from '@/api/user'
 
-// 切换到登录
+const isRegister = inject('isRegister') // 消费状态
+const toggleRegister = inject('toggleRegister') // 消费方法
+
+// 切换到登录状态
 const goToLogin = () => {
-  emit('toggleRegister') // 通知父组件切换状态
+  toggleRegister()
 }
 
 const ruleFormRef = ref(null)
+
+watch(
+  () => isRegister,
+  (newValue, oldValue) => {
+    console.log('modelValue 变化:', oldValue, '->', newValue)
+    // 清空表单数据
+    ruleForm.username = ''
+    ruleForm.password = ''
+    ruleForm.repassword = ''
+  },
+)
+
+// 注册前的预校验
+const register = async () => {
+  await ruleFormRef.value.validate()
+  await userRegisterService(ruleForm)
+  console.log('开始注册请求', ruleForm)
+  ElMessage.success('注册成功')
+  goToLogin()
+}
 
 // 表单模型
 const ruleForm = reactive({
@@ -98,7 +119,9 @@ const rules = {
         />
       </el-form-item>
       <el-form-item>
-        <el-button class="button" type="primary" auto-insert-space> 注册 </el-button>
+        <el-button class="button" type="primary" auto-insert-space @click="register">
+          注册
+        </el-button>
       </el-form-item>
       <el-form-item>
         <el-link type="info" :underline="false" @click="goToLogin"> ← 返回 </el-link>
